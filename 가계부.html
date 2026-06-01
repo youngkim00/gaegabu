@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>가계부</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nanum Myeongjo', serif; background: #f0f2f5; color: #333; }
+
+    h1 { text-align: center; padding: 24px 0 14px; font-size: 1.7rem; font-weight: 800; color: #2c3e50; letter-spacing: -.5px; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
+
+    /* ── 요약 카드 ── */
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+    .card { background: #fff; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card .label { font-size: .72rem; color: #888; margin-bottom: 5px; }
+    .card .amount { font-size: 1.1rem; font-weight: 700; }
+    .card.balance .amount { color: #2c3e50; }
+    .card.income  .amount { color: #27ae60; }
+    .card.expense .amount { color: #e74c3c; }
+
+    /* ── 결제수단 요약 ── */
+    .pay-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .pay-card { background: #fff; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.07); border-top: 3px solid #ddd; }
+    .pay-card.cash  { border-top-color: #8e44ad; }
+    .pay-card.pcard { border-top-color: #2980b9; }
+    .pay-card.ccard { border-top-color: #e67e22; }
+    .pay-card .plabel { font-size: .68rem; color: #888; margin-bottom: 3px; }
+    .pay-card .pamt   { font-size: .88rem; font-weight: 700; color: #444; }
+
+    /* ── 탭 ── */
+    .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); gap: 4px; }
+    .tabs button {
+      flex: 1; padding: 9px; border: none; border-radius: 9px; background: transparent;
+      font-size: .9rem; font-family: 'Nanum Myeongjo', serif; font-weight: 700;
+      cursor: pointer; color: #888; transition: all .2s;
+    }
+    .tabs button.active { background: #3498db; color: #fff; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── 입력 폼 ── */
+    .form { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px; }
+    .form-row { display: grid; gap: 10px; margin-bottom: 10px; }
+    .form-row.col3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row.col1 { grid-template-columns: 1fr; }
+    .form input, .form select {
+      width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: .88rem; outline: none;
+      font-family: 'Nanum Myeongjo', serif;
+    }
+    .form input:focus, .form select:focus { border-color: #3498db; }
+    .btn-add {
+      width: 100%; padding: 11px; background: #3498db; color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;
+      font-family: 'Nanum Myeongjo', serif; font-weight: 700;
+      transition: background .2s;
+    }
+    .btn-add:hover { background: #2980b9; }
+
+    /* ── 내역 필터 ── */
+    .list-header { margin-bottom: 12px; }
+    .list-header h2 { font-size: 1rem; color: #555; margin-bottom: 8px; }
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; align-items: center; }
+    .filter-row > span { font-size: .72rem; color: #aaa; margin-right: 2px; }
+    .filter-btns button {
+      padding: 3px 11px; border: 1px solid #ddd; border-radius: 20px;
+      background: #fff; font-size: .78rem; cursor: pointer;
+      font-family: 'Nanum Myeongjo', serif; transition: all .15s;
+    }
+    .filter-btns button.active { color: #fff; border-color: transparent; }
+    .filter-btns.ftype button.active  { background: #3498db; }
+    .filter-btns.fpay button.active[data-pay="all"]   { background: #555; }
+    .filter-btns.fpay button.active[data-pay="cash"]  { background: #8e44ad; }
+    .filter-btns.fpay button.active[data-pay="pcard"] { background: #2980b9; }
+    .filter-btns.fpay button.active[data-pay="ccard"] { background: #e67e22; }
+
+    .empty { text-align: center; color: #aaa; padding: 40px 0; font-size: .9rem; }
+
+    /* ── 내역 아이템 ── */
+    .item {
+      background: #fff; border-radius: 10px; padding: 13px 16px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 8px;
+    }
+    .item .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .item .dot.income  { background: #27ae60; }
+    .item .dot.expense { background: #e74c3c; }
+    .item .info { flex: 1; min-width: 0; }
+    .item .desc { font-size: .92rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .item .date { font-size: .7rem; color: #aaa; }
+    .pay-tag { font-size: .63rem; padding: 1px 7px; border-radius: 10px; color: #fff; font-weight: 700; }
+    .pay-tag.cash  { background: #8e44ad; }
+    .pay-tag.pcard { background: #2980b9; }
+    .pay-tag.ccard { background: #e67e22; }
+    .item .val { font-size: .98rem; font-weight: 700; flex-shrink: 0; }
+    .item .val.income  { color: #27ae60; }
+    .item .val.expense { color: #e74c3c; }
+    .btn-del {
+      background: none; border: none; color: #ccc; font-size: 1rem;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: color .15s;
+    }
+    .btn-del:hover { color: #e74c3c; }
+
+    /* ── 달력 ── */
+    .cal-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff; border-radius: 10px; padding: 10px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 10px;
+    }
+    .cal-nav button {
+      background: none; border: 1px solid #ddd; border-radius: 6px;
+      padding: 4px 16px; cursor: pointer; font-family: 'Nanum Myeongjo', serif; font-size: .9rem;
+    }
+    .cal-nav button:hover { background: #f5f5f5; }
+    .cal-nav h3 { font-size: 1rem; font-weight: 700; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-weekday { text-align: center; font-size: .72rem; font-weight: 700; color: #888; padding: 4px 0 6px; }
+    .cal-weekday.sun { color: #e74c3c; }
+    .cal-weekday.sat { color: #3498db; }
+
+    .cal-cell {
+      background: #fff; border-radius: 8px; padding: 5px 5px 6px;
+      cursor: pointer; transition: box-shadow .15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06); min-height: 60px;
+    }
+    .cal-cell:hover { box-shadow: 0 2px 8px rgba(0,0,0,.13); }
+    .cal-cell.empty { background: transparent; box-shadow: none; cursor: default; pointer-events: none; }
+    .cal-cell.today { outline: 2px solid #3498db; outline-offset: -1px; }
+    .cal-cell.selected { background: #eaf4fd; }
+    .cal-cell.sun .cday { color: #e74c3c; }
+    .cal-cell.sat .cday { color: #3498db; }
+    .cday { font-size: .78rem; font-weight: 700; text-align: right; margin-bottom: 3px; }
+    .cinc { font-size: .58rem; color: #27ae60; text-align: right; line-height: 1.5; }
+    .cexp { font-size: .58rem; color: #e74c3c; text-align: right; line-height: 1.5; }
+
+    .cal-detail { background: #fff; border-radius: 10px; padding: 16px; margin-top: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .cal-detail h4 { font-size: .9rem; color: #555; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+    .cal-detail .item { box-shadow: none; border: 1px solid #f0f0f0; margin-bottom: 6px; }
+
+    /* ── 차트 ── */
+    .chart-section { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+    .chart-section h3 { font-size: .95rem; color: #555; margin-bottom: 14px; }
+    .chart-container { position: relative; height: 260px; }
+    .chart-container.sm { height: 220px; }
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 460px) { .chart-row { grid-template-columns: 1fr; } .form-row.col3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>가계부</h1>
+  <div class="container">
+
+    <!-- 요약 (항상 표시) -->
+    <div class="summary">
+      <div class="card balance"><div class="label">잔액</div><div class="amount" id="balance">0원</div></div>
+      <div class="card income"><div class="label">수입</div><div class="amount" id="totalIncome">0원</div></div>
+      <div class="card expense"><div class="label">지출</div><div class="amount" id="totalExpense">0원</div></div>
+    </div>
+    <div class="pay-summary">
+      <div class="pay-card cash"><div class="plabel">현금</div><div class="pamt" id="sumCash">0원</div></div>
+      <div class="pay-card pcard"><div class="plabel">개인카드</div><div class="pamt" id="sumPcard">0원</div></div>
+      <div class="pay-card ccard"><div class="plabel">법인카드</div><div class="pamt" id="sumCcard">0원</div></div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="tabs">
+      <button class="active" onclick="showTab('list',this)">내역</button>
+      <button onclick="showTab('calendar',this)">달력</button>
+      <button onclick="showTab('chart',this)">차트</button>
+    </div>
+
+    <!-- ── 내역 탭 ── -->
+    <div id="tab-list" class="tab-content active">
+      <div class="form">
+        <div class="form-row col3">
+          <input type="date" id="date">
+          <select id="type">
+            <option value="income">수입</option>
+            <option value="expense">지출</option>
+          </select>
+          <select id="pay">
+            <option value="cash">현금</option>
+            <option value="pcard">개인카드</option>
+            <option value="ccard">법인카드</option>
+          </select>
+        </div>
+        <div class="form-row col1">
+          <input type="text" id="desc" placeholder="항목 (예: 점심, 월급)">
+        </div>
+        <div class="form-row col1">
+          <input type="number" id="amount" placeholder="금액" min="0">
+        </div>
+        <button class="btn-add" onclick="addEntry()">추가</button>
+      </div>
+
+      <div class="list-header">
+        <h2>내역</h2>
+        <div class="filter-row">
+          <span>구분</span>
+          <div class="filter-btns ftype">
+            <button class="active" onclick="setFilter('type','all',this)">전체</button>
+            <button onclick="setFilter('type','income',this)">수입</button>
+            <button onclick="setFilter('type','expense',this)">지출</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <span>결제</span>
+          <div class="filter-btns fpay">
+            <button class="active" data-pay="all"   onclick="setFilter('pay','all',this)">전체</button>
+            <button data-pay="cash"  onclick="setFilter('pay','cash',this)">현금</button>
+            <button data-pay="pcard" onclick="setFilter('pay','pcard',this)">개인카드</button>
+            <button data-pay="ccard" onclick="setFilter('pay','ccard',this)">법인카드</button>
+          </div>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <!-- ── 달력 탭 ── -->
+    <div id="tab-calendar" class="tab-content">
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <h3 id="calTitle"></h3>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div id="calDetail"></div>
+    </div>
+
+    <!-- ── 차트 탭 ── -->
+    <div id="tab-chart" class="tab-content">
+      <div class="chart-section">
+        <h3>월별 수입 · 지출 (최근 6개월)</h3>
+        <div class="chart-container">
+          <canvas id="chartMonthly"></canvas>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-section">
+          <h3>결제수단별 지출</h3>
+          <div class="chart-container sm">
+            <canvas id="chartPay"></canvas>
+          </div>
+        </div>
+        <div class="chart-section">
+          <h3>수입 · 지출 비율</h3>
+          <div class="chart-container sm">
+            <canvas id="chartType"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    Chart.defaults.font.family = "'Nanum Myeongjo', serif";
+
+    let entries    = JSON.parse(localStorage.getItem('ggb_entries') || '[]');
+    let filterType = 'all';
+    let filterPay  = 'all';
+    let selectedDay = null;
+    let calYear, calMonth;
+    let chartMonthly = null, chartPay = null, chartType = null;
+
+    const today = new Date();
+    calYear  = today.getFullYear();
+    calMonth = today.getMonth();
+
+    const PAY_LABEL  = { cash:'현금', pcard:'개인카드', ccard:'법인카드' };
+    const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const todayStr = today.toISOString().slice(0, 10);
+
+    document.getElementById('date').value = todayStr;
+
+    function save() { localStorage.setItem('ggb_entries', JSON.stringify(entries)); }
+
+    function fmt(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
+
+    function fmtShort(n) {
+      if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '억';
+      if (n >= 10000)     return Math.round(n / 10000) + '만';
+      return n.toLocaleString('ko-KR');
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── 요약 ────────────────────────────────────────────
+    function renderSummary() {
+      const inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+      const exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+      document.getElementById('totalIncome').textContent  = fmt(inc);
+      document.getElementById('totalExpense').textContent = fmt(exp);
+      document.getElementById('balance').textContent      = fmt(inc - exp);
+      ['cash','pcard','ccard'].forEach(p => {
+        const total = entries.filter(e => e.pay === p).reduce((s, e) => s + e.amount, 0);
+        document.getElementById('sum' + p.charAt(0).toUpperCase() + p.slice(1)).textContent = fmt(total);
+      });
+    }
+
+    // ── 내역 목록 ────────────────────────────────────────
+    function renderList() {
+      let shown = entries;
+      if (filterType !== 'all') shown = shown.filter(e => e.type === filterType);
+      if (filterPay  !== 'all') shown = shown.filter(e => e.pay  === filterPay);
+
+      const list = document.getElementById('list');
+      if (shown.length === 0) {
+        list.innerHTML = '<div class="empty">내역이 없습니다.</div>';
+        return;
+      }
+      const sorted = [...shown].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+      list.innerHTML = sorted.map(e => itemHtml(e)).join('');
+    }
+
+    function itemHtml(e) {
+      return `
+        <div class="item">
+          <div class="dot ${e.type}"></div>
+          <div class="info">
+            <div class="desc">${escHtml(e.desc)}</div>
+            <div class="meta">
+              <span class="date">${e.date}</span>
+              <span class="pay-tag ${e.pay}">${PAY_LABEL[e.pay] || e.pay}</span>
+            </div>
+          </div>
+          <div class="val ${e.type}">${e.type === 'income' ? '+' : '-'}${fmt(e.amount)}</div>
+          <button class="btn-del" onclick="deleteEntry(${e.id})" title="삭제">✕</button>
+        </div>`;
+    }
+
+    // ── 달력 ─────────────────────────────────────────────
+    function renderCalendar() {
+      const monthStr   = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+      const firstDow   = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+      document.getElementById('calTitle').textContent = `${calYear}년 ${MONTH_NAMES[calMonth]}`;
+
+      // 날짜별 합계
+      const byDay = {};
+      entries.filter(e => e.date.startsWith(monthStr)).forEach(e => {
+        const d = parseInt(e.date.slice(8));
+        if (!byDay[d]) byDay[d] = { income: 0, expense: 0 };
+        byDay[d][e.type] += e.amount;
+      });
+
+      const DOW_LABEL = ['일','월','화','수','목','금','토'];
+      const DOW_CLASS = ['sun','','','','','','sat'];
+      let html = DOW_LABEL.map((d, i) => `<div class="cal-weekday ${DOW_CLASS[i]}">${d}</div>`).join('');
+
+      for (let i = 0; i < firstDow; i++) html += '<div class="cal-cell empty"></div>';
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dow     = (firstDow + d - 1) % 7;
+        let cls = 'cal-cell';
+        if (dow === 0)              cls += ' sun';
+        if (dow === 6)              cls += ' sat';
+        if (dateStr === todayStr)   cls += ' today';
+        if (dateStr === selectedDay) cls += ' selected';
+
+        const data = byDay[d];
+        html += `<div class="${cls}" onclick="selectDay('${dateStr}')">
+          <div class="cday">${d}</div>
+          ${data && data.income  ? `<div class="cinc">+${fmtShort(data.income)}</div>`  : ''}
+          ${data && data.expense ? `<div class="cexp">-${fmtShort(data.expense)}</div>` : ''}
+        </div>`;
+      }
+
+      document.getElementById('calGrid').innerHTML = html;
+      renderCalDetail();
+    }
+
+    function renderCalDetail() {
+      const el = document.getElementById('calDetail');
+      if (!selectedDay) { el.innerHTML = ''; return; }
+
+      const dayEntries = entries.filter(e => e.date === selectedDay)
+                                .sort((a, b) => b.id - a.id);
+      const inner = dayEntries.length === 0
+        ? '<div class="empty" style="padding:16px 0">이 날의 내역이 없습니다.</div>'
+        : dayEntries.map(e => itemHtml(e)).join('');
+
+      el.innerHTML = `<div class="cal-detail"><h4>${selectedDay}</h4>${inner}</div>`;
+    }
+
+    function selectDay(dateStr) {
+      selectedDay = selectedDay === dateStr ? null : dateStr;
+      renderCalendar();
+    }
+
+    function changeMonth(dir) {
+      calMonth += dir;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      if (calMonth < 0)  { calMonth = 11; calYear--; }
+      selectedDay = null;
+      renderCalendar();
+    }
+
+    // ── 차트 ─────────────────────────────────────────────
+    function renderCharts() {
+      renderChartMonthly();
+      renderChartPay();
+      renderChartType();
+    }
+
+    function renderChartMonthly() {
+      const labels = [], incData = [], expData = [];
+      for (let i = 5; i >= 0; i--) {
+        const d   = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+        labels.push(`${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2,'0')}`);
+        const m = entries.filter(e => e.date.startsWith(key));
+        incData.push(m.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0));
+        expData.push(m.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0));
+      }
+      if (chartMonthly) chartMonthly.destroy();
+      chartMonthly = new Chart(document.getElementById('chartMonthly'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '수입', data: incData, backgroundColor: 'rgba(39,174,96,.75)', borderRadius: 5 },
+            { label: '지출', data: expData, backgroundColor: 'rgba(231,76,60,.75)',  borderRadius: 5 },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { padding: 16 } } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => v >= 10000 ? Math.round(v/10000)+'만' : v.toLocaleString('ko-KR') } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderChartPay() {
+      const expEntries = entries.filter(e => e.type === 'expense');
+      const vals = [
+        expEntries.filter(e => e.pay === 'cash').reduce((s, e) => s + e.amount, 0),
+        expEntries.filter(e => e.pay === 'pcard').reduce((s, e) => s + e.amount, 0),
+        expEntries.filter(e => e.pay === 'ccard').reduce((s, e) => s + e.amount, 0),
+      ];
+      if (chartPay) chartPay.destroy();
+      chartPay = new Chart(document.getElementById('chartPay'), {
+        type: 'doughnut',
+        data: {
+          labels: ['현금', '개인카드', '법인카드'],
+          datasets: [{ data: vals, backgroundColor: ['#8e44ad','#2980b9','#e67e22'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 12 } },
+            tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw.toLocaleString('ko-KR')}원` } }
+          }
+        }
+      });
+    }
+
+    function renderChartType() {
+      const inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+      const exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+      if (chartType) chartType.destroy();
+      chartType = new Chart(document.getElementById('chartType'), {
+        type: 'doughnut',
+        data: {
+          labels: ['수입', '지출'],
+          datasets: [{ data: [inc, exp], backgroundColor: ['rgba(39,174,96,.8)','rgba(231,76,60,.8)'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 12 } },
+            tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw.toLocaleString('ko-KR')}원` } }
+          }
+        }
+      });
+    }
+
+    // ── 조작 ─────────────────────────────────────────────
+    function addEntry() {
+      const date   = document.getElementById('date').value;
+      const type   = document.getElementById('type').value;
+      const pay    = document.getElementById('pay').value;
+      const desc   = document.getElementById('desc').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+
+      if (!date)               { alert('날짜를 선택해주세요.');  return; }
+      if (!desc)               { alert('항목을 입력해주세요.');  return; }
+      if (!amount || amount <= 0) { alert('금액을 입력해주세요.'); return; }
+
+      entries.push({ id: Date.now(), date, type, pay, desc, amount });
+      save();
+      renderSummary();
+      renderList();
+      document.getElementById('desc').value   = '';
+      document.getElementById('amount').value = '';
+    }
+
+    function deleteEntry(id) {
+      if (!confirm('삭제할까요?')) return;
+      entries = entries.filter(e => e.id !== id);
+      save();
+      renderSummary();
+      const activeTab = document.querySelector('.tab-content.active').id;
+      if (activeTab === 'tab-list')     renderList();
+      if (activeTab === 'tab-calendar') renderCalendar();
+      if (activeTab === 'tab-chart')    renderCharts();
+    }
+
+    function setFilter(kind, val, btn) {
+      if (kind === 'type') {
+        filterType = val;
+        document.querySelectorAll('.filter-btns.ftype button').forEach(b => b.classList.remove('active'));
+      } else {
+        filterPay = val;
+        document.querySelectorAll('.filter-btns.fpay button').forEach(b => b.classList.remove('active'));
+      }
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function showTab(tab, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      btn.classList.add('active');
+      if (tab === 'calendar') renderCalendar();
+      if (tab === 'chart')    renderCharts();
+    }
+
+    ['desc', 'amount'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
+    });
+
+    renderSummary();
+    renderList();
+  </script>
+</body>
+</html>
