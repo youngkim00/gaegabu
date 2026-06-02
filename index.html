@@ -11,16 +11,18 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Nanum Myeongjo', serif; background: #f0f2f5; color: #333; }
-
-    h1 { text-align: center; padding: 24px 0 14px; font-size: 1.7rem; font-weight: 800; color: #2c3e50; letter-spacing: -.5px; }
-
-    .container { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
-
-    .db-status { text-align: center; font-size: .72rem; margin-bottom: 14px; color: #aaa; }
+    h1 { text-align: center; padding: 24px 0 6px; font-size: 1.7rem; font-weight: 800; color: #2c3e50; letter-spacing: -.5px; }
+    .container { max-width: 660px; margin: 0 auto; padding: 0 16px 48px; }
+    .db-status { text-align: center; font-size: .72rem; margin-bottom: 12px; color: #aaa; }
     .db-status.on  { color: #27ae60; }
     .db-status.off { color: #e67e22; }
 
-    /* ── 요약 카드 ── */
+    /* 결제일 알림 배너 */
+    .alert-banner { background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: .85rem; color: #8a6d00; }
+    .alert-banner b { color: #e67e22; }
+    .alert-banner .a-item { margin-top: 4px; }
+
+    /* 요약 카드 */
     .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
     .card { background: #fff; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
     .card .label { font-size: .72rem; color: #888; margin-bottom: 5px; }
@@ -29,209 +31,148 @@
     .card.income  .amount { color: #27ae60; }
     .card.expense .amount { color: #e74c3c; }
 
-    /* ── 결제수단 요약 ── */
-    .pay-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-    .pay-card { background: #fff; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.07); border-top: 3px solid #ddd; }
-    .pay-card.cash  { border-top-color: #8e44ad; }
-    .pay-card.pcard { border-top-color: #2980b9; }
-    .pay-card.ccard { border-top-color: #e67e22; }
-    .pay-card .plabel { font-size: .68rem; color: #888; margin-bottom: 3px; }
-    .pay-card .pamt   { font-size: .88rem; font-weight: 700; color: #444; }
-
-    /* ── 탭 ── */
-    .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); gap: 4px; }
-    .tabs button {
-      flex: 1; padding: 9px; border: none; border-radius: 9px; background: transparent;
-      font-size: .9rem; font-family: 'Nanum Myeongjo', serif; font-weight: 700;
-      cursor: pointer; color: #888; transition: all .2s;
-    }
+    /* 탭 */
+    .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08); gap: 3px; overflow-x: auto; }
+    .tabs button { flex: 1 0 auto; padding: 9px 10px; border: none; border-radius: 9px; background: transparent; font-size: .85rem; font-family: inherit; font-weight: 700; cursor: pointer; color: #888; transition: all .2s; white-space: nowrap; }
     .tabs button.active { background: #3498db; color: #fff; }
-
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ── 입력 폼 ── */
-    .form { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px; }
+    /* 폼 */
+    .card-box { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 18px; }
+    .card-box h3 { font-size: .95rem; color: #555; margin-bottom: 12px; }
     .form-row { display: grid; gap: 10px; margin-bottom: 10px; }
     .form-row.col3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row.col2 { grid-template-columns: 1fr 1fr; }
     .form-row.col1 { grid-template-columns: 1fr; }
-    .form input, .form select {
-      width: 100%; padding: 10px 12px; border: 1px solid #ddd;
-      border-radius: 8px; font-size: .88rem; outline: none;
-      font-family: 'Nanum Myeongjo', serif;
-    }
-    .form input:focus, .form select:focus { border-color: #3498db; }
-    .btn-add {
-      width: 100%; padding: 11px; background: #3498db; color: #fff;
-      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;
-      font-family: 'Nanum Myeongjo', serif; font-weight: 700;
-      transition: background .2s;
-    }
-    .btn-add:hover { background: #2980b9; }
+    input, select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: .88rem; outline: none; font-family: inherit; background: #fff; }
+    input:focus, select:focus { border-color: #3498db; }
+    .btn { width: 100%; padding: 11px; background: #3498db; color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-family: inherit; font-weight: 700; transition: background .2s; }
+    .btn:hover { background: #2980b9; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-sm { padding: 7px 12px; font-size: .8rem; width: auto; }
+    .btn-gray { background: #95a5a6; }
+    .btn-gray:hover { background: #7f8c8d; }
 
-    /* ── 내역 필터 ── */
-    .list-header { margin-bottom: 12px; }
+    /* 필터 */
     .list-header h2 { font-size: 1rem; color: #555; margin-bottom: 8px; }
     .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; align-items: center; }
     .filter-row > span { font-size: .72rem; color: #aaa; margin-right: 2px; }
-    .filter-btns button {
-      padding: 3px 11px; border: 1px solid #ddd; border-radius: 20px;
-      background: #fff; font-size: .78rem; cursor: pointer;
-      font-family: 'Nanum Myeongjo', serif; transition: all .15s;
-    }
-    .filter-btns button.active { color: #fff; border-color: transparent; }
-    .filter-btns.ftype button.active  { background: #3498db; }
-    .filter-btns.fpay button.active[data-pay="all"]   { background: #555; }
-    .filter-btns.fpay button.active[data-pay="cash"]  { background: #8e44ad; }
-    .filter-btns.fpay button.active[data-pay="pcard"] { background: #2980b9; }
-    .filter-btns.fpay button.active[data-pay="ccard"] { background: #e67e22; }
+    .chip { padding: 3px 11px; border: 1px solid #ddd; border-radius: 20px; background: #fff; font-size: .78rem; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .chip.active { color: #fff; border-color: transparent; background: #3498db; }
 
-    .empty { text-align: center; color: #aaa; padding: 40px 0; font-size: .9rem; }
+    .empty { text-align: center; color: #aaa; padding: 36px 0; font-size: .9rem; }
 
-    /* ── 내역 아이템 ── */
-    .item {
-      background: #fff; border-radius: 10px; padding: 13px 16px;
-      display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 8px;
-    }
+    /* 아이템 */
+    .item { background: #fff; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 8px; }
     .item .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .item .dot.income  { background: #27ae60; }
-    .item .dot.expense { background: #e74c3c; }
     .item .info { flex: 1; min-width: 0; }
     .item .desc { font-size: .92rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .item .meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .item .meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
     .item .date { font-size: .7rem; color: #aaa; }
-    .pay-tag { font-size: .63rem; padding: 1px 7px; border-radius: 10px; color: #fff; font-weight: 700; }
-    .pay-tag.cash  { background: #8e44ad; }
-    .pay-tag.pcard { background: #2980b9; }
-    .pay-tag.ccard { background: #e67e22; }
+    .tag { font-size: .63rem; padding: 1px 8px; border-radius: 10px; color: #fff; font-weight: 700; }
     .item .val { font-size: .98rem; font-weight: 700; flex-shrink: 0; }
     .item .val.income  { color: #27ae60; }
     .item .val.expense { color: #e74c3c; }
-    .btn-del {
-      background: none; border: none; color: #ccc; font-size: 1rem;
-      cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: color .15s;
-    }
+    .btn-del { background: none; border: none; color: #ccc; font-size: 1rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: color .15s; }
     .btn-del:hover { color: #e74c3c; }
 
-    /* ── 달력 ── */
-    .cal-nav {
-      display: flex; justify-content: space-between; align-items: center;
-      background: #fff; border-radius: 10px; padding: 10px 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 10px;
-    }
-    .cal-nav button {
-      background: none; border: 1px solid #ddd; border-radius: 6px;
-      padding: 4px 16px; cursor: pointer; font-family: 'Nanum Myeongjo', serif; font-size: .9rem;
-    }
+    /* 달력 */
+    .cal-nav { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 10px; padding: 10px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 10px; }
+    .cal-nav button { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 16px; cursor: pointer; font-family: inherit; font-size: .9rem; }
     .cal-nav button:hover { background: #f5f5f5; }
     .cal-nav h3 { font-size: 1rem; font-weight: 700; }
-
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .cal-weekday { text-align: center; font-size: .72rem; font-weight: 700; color: #888; padding: 4px 0 6px; }
-    .cal-weekday.sun { color: #e74c3c; }
-    .cal-weekday.sat { color: #3498db; }
-
-    .cal-cell {
-      background: #fff; border-radius: 8px; padding: 5px 5px 6px;
-      cursor: pointer; transition: box-shadow .15s;
-      box-shadow: 0 1px 2px rgba(0,0,0,.06); min-height: 60px;
-    }
+    .cal-weekday.sun { color: #e74c3c; } .cal-weekday.sat { color: #3498db; }
+    .cal-cell { background: #fff; border-radius: 8px; padding: 5px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.06); min-height: 58px; transition: box-shadow .15s; }
     .cal-cell:hover { box-shadow: 0 2px 8px rgba(0,0,0,.13); }
-    .cal-cell.empty { background: transparent; box-shadow: none; cursor: default; pointer-events: none; }
+    .cal-cell.empty { background: transparent; box-shadow: none; pointer-events: none; }
     .cal-cell.today { outline: 2px solid #3498db; outline-offset: -1px; }
     .cal-cell.selected { background: #eaf4fd; }
-    .cal-cell.sun .cday { color: #e74c3c; }
-    .cal-cell.sat .cday { color: #3498db; }
+    .cal-cell.sun .cday { color: #e74c3c; } .cal-cell.sat .cday { color: #3498db; }
     .cday { font-size: .78rem; font-weight: 700; text-align: right; margin-bottom: 3px; }
-    .cinc { font-size: .58rem; color: #27ae60; text-align: right; line-height: 1.5; }
-    .cexp { font-size: .58rem; color: #e74c3c; text-align: right; line-height: 1.5; }
+    .cinc { font-size: .57rem; color: #27ae60; text-align: right; } .cexp { font-size: .57rem; color: #e74c3c; text-align: right; }
+    .cal-detail { margin-top: 10px; }
 
-    .cal-detail { background: #fff; border-radius: 10px; padding: 16px; margin-top: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .cal-detail h4 { font-size: .9rem; color: #555; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
-    .cal-detail .item { box-shadow: none; border: 1px solid #f0f0f0; margin-bottom: 6px; }
-
-    /* ── 차트 ── */
-    .chart-section { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
-    .chart-section h3 { font-size: .95rem; color: #555; margin-bottom: 14px; }
-    .chart-container { position: relative; height: 260px; }
+    /* 차트 */
+    .chart-container { position: relative; height: 250px; }
     .chart-container.sm { height: 220px; }
     .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 460px) { .chart-row { grid-template-columns: 1fr; } .form-row.col3 { grid-template-columns: 1fr; } }
+
+    /* 예산 진행바 */
+    .bgt { background: #fff; border-radius: 10px; padding: 13px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 8px; }
+    .bgt-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+    .bgt-name { font-weight: 700; font-size: .9rem; }
+    .bgt-num { font-size: .78rem; color: #888; }
+    .bgt-bar { height: 8px; background: #eee; border-radius: 5px; overflow: hidden; }
+    .bgt-fill { height: 100%; border-radius: 5px; transition: width .3s; }
+    .bgt-input { display: flex; gap: 8px; align-items: center; }
+    .bgt-input input { flex: 1; }
+
+    @media (max-width: 480px) {
+      .chart-row { grid-template-columns: 1fr; }
+      .form-row.col3 { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(3, 1fr); }
+    }
   </style>
 </head>
 <body>
   <h1>가계부</h1>
   <div class="container">
     <div class="db-status" id="dbStatus">● 연결 중…</div>
+    <div id="alertBox"></div>
 
-    <!-- 요약 (항상 표시) -->
     <div class="summary">
       <div class="card balance"><div class="label">잔액</div><div class="amount" id="balance">0원</div></div>
       <div class="card income"><div class="label">수입</div><div class="amount" id="totalIncome">0원</div></div>
       <div class="card expense"><div class="label">지출</div><div class="amount" id="totalExpense">0원</div></div>
     </div>
-    <div class="pay-summary">
-      <div class="pay-card cash"><div class="plabel">현금</div><div class="pamt" id="sumCash">0원</div></div>
-      <div class="pay-card pcard"><div class="plabel">개인카드</div><div class="pamt" id="sumPcard">0원</div></div>
-      <div class="pay-card ccard"><div class="plabel">법인카드</div><div class="pamt" id="sumCcard">0원</div></div>
-    </div>
 
-    <!-- 탭 -->
     <div class="tabs">
       <button class="active" onclick="showTab('list',this)">내역</button>
       <button onclick="showTab('calendar',this)">달력</button>
       <button onclick="showTab('chart',this)">차트</button>
+      <button onclick="showTab('recurring',this)">정기결제</button>
+      <button onclick="showTab('budget',this)">예산</button>
+      <button onclick="showTab('settings',this)">설정</button>
     </div>
 
-    <!-- ── 내역 탭 ── -->
+    <!-- 내역 -->
     <div id="tab-list" class="tab-content active">
-      <div class="form">
+      <div class="card-box">
         <div class="form-row col3">
-          <input type="date" id="date">
-          <select id="type">
+          <input type="date" id="t-date">
+          <select id="t-type" onchange="fillCategoryOptions('t-cat','t-type')">
             <option value="income">수입</option>
-            <option value="expense">지출</option>
+            <option value="expense" selected>지출</option>
           </select>
-          <select id="pay">
-            <option value="cash">현금</option>
-            <option value="pcard">개인카드</option>
-            <option value="ccard">법인카드</option>
-          </select>
+          <select id="t-pay"></select>
+        </div>
+        <div class="form-row col2">
+          <select id="t-cat"></select>
+          <input type="number" id="t-amount" placeholder="금액" min="0">
         </div>
         <div class="form-row col1">
-          <input type="text" id="desc" placeholder="항목 (예: 점심, 월급)">
+          <input type="text" id="t-desc" placeholder="내용 (예: 점심, 월급)">
         </div>
-        <div class="form-row col1">
-          <input type="number" id="amount" placeholder="금액" min="0">
-        </div>
-        <button class="btn-add" onclick="addEntry()">추가</button>
+        <button class="btn" id="t-add" onclick="addTransaction()">추가</button>
       </div>
 
       <div class="list-header">
         <h2>내역</h2>
         <div class="filter-row">
           <span>구분</span>
-          <div class="filter-btns ftype">
-            <button class="active" onclick="setFilter('type','all',this)">전체</button>
-            <button onclick="setFilter('type','income',this)">수입</button>
-            <button onclick="setFilter('type','expense',this)">지출</button>
-          </div>
+          <button class="chip active" data-f="type" data-v="all" onclick="setFilter(this)">전체</button>
+          <button class="chip" data-f="type" data-v="income" onclick="setFilter(this)">수입</button>
+          <button class="chip" data-f="type" data-v="expense" onclick="setFilter(this)">지출</button>
         </div>
-        <div class="filter-row">
-          <span>결제</span>
-          <div class="filter-btns fpay">
-            <button class="active" data-pay="all"   onclick="setFilter('pay','all',this)">전체</button>
-            <button data-pay="cash"  onclick="setFilter('pay','cash',this)">현금</button>
-            <button data-pay="pcard" onclick="setFilter('pay','pcard',this)">개인카드</button>
-            <button data-pay="ccard" onclick="setFilter('pay','ccard',this)">법인카드</button>
-          </div>
-        </div>
+        <div class="filter-row" id="payFilters"></div>
       </div>
       <div id="list"></div>
     </div>
 
-    <!-- ── 달력 탭 ── -->
+    <!-- 달력 -->
     <div id="tab-calendar" class="tab-content">
       <div class="cal-nav">
         <button onclick="changeMonth(-1)">&#8249;</button>
@@ -239,30 +180,72 @@
         <button onclick="changeMonth(1)">&#8250;</button>
       </div>
       <div class="cal-grid" id="calGrid"></div>
-      <div id="calDetail"></div>
+      <div id="calDetail" class="cal-detail"></div>
     </div>
 
-    <!-- ── 차트 탭 ── -->
+    <!-- 차트 -->
     <div id="tab-chart" class="tab-content">
-      <div class="chart-section">
-        <h3>월별 수입 · 지출 (최근 6개월)</h3>
-        <div class="chart-container">
-          <canvas id="chartMonthly"></canvas>
-        </div>
-      </div>
+      <div class="card-box"><h3>월별 수입 · 지출 (최근 6개월)</h3><div class="chart-container"><canvas id="chartMonthly"></canvas></div></div>
       <div class="chart-row">
-        <div class="chart-section">
-          <h3>결제수단별 지출</h3>
-          <div class="chart-container sm">
-            <canvas id="chartPay"></canvas>
-          </div>
+        <div class="card-box"><h3>카테고리별 지출</h3><div class="chart-container sm"><canvas id="chartCat"></canvas></div></div>
+        <div class="card-box"><h3>결제수단별 지출</h3><div class="chart-container sm"><canvas id="chartPay"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- 정기결제 -->
+    <div id="tab-recurring" class="tab-content">
+      <div class="card-box">
+        <h3>정기결제 등록</h3>
+        <div class="form-row col2">
+          <input type="text" id="r-name" placeholder="이름 (예: 넷플릭스)">
+          <input type="number" id="r-amount" placeholder="금액" min="0">
         </div>
-        <div class="chart-section">
-          <h3>수입 · 지출 비율</h3>
-          <div class="chart-container sm">
-            <canvas id="chartType"></canvas>
-          </div>
+        <div class="form-row col3">
+          <select id="r-day"></select>
+          <select id="r-type" onchange="fillCategoryOptions('r-cat','r-type')">
+            <option value="expense" selected>지출</option>
+            <option value="income">수입</option>
+          </select>
+          <select id="r-pay"></select>
         </div>
+        <div class="form-row col1"><select id="r-cat"></select></div>
+        <button class="btn" id="r-add" onclick="addRecurring()">등록</button>
+      </div>
+      <div class="list-header"><h2>정기결제 목록</h2></div>
+      <div id="recurringList"></div>
+    </div>
+
+    <!-- 예산 -->
+    <div id="tab-budget" class="tab-content">
+      <div class="cal-nav">
+        <button onclick="changeBudgetMonth(-1)">&#8249;</button>
+        <h3 id="bgtTitle"></h3>
+        <button onclick="changeBudgetMonth(1)">&#8250;</button>
+      </div>
+      <div id="budgetList"></div>
+    </div>
+
+    <!-- 설정 -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card-box">
+        <h3>카테고리 관리</h3>
+        <div class="form-row col3">
+          <input type="text" id="c-name" placeholder="카테고리명">
+          <select id="c-type"><option value="expense">지출</option><option value="income">수입</option></select>
+          <input type="color" id="c-color" value="#888888" style="height:42px;padding:4px">
+        </div>
+        <button class="btn btn-gray" onclick="addCategory()">카테고리 추가</button>
+        <div id="catList" style="margin-top:14px"></div>
+      </div>
+      <div class="card-box">
+        <h3>결제수단 관리</h3>
+        <div class="form-row col3">
+          <input type="text" id="p-name" placeholder="결제수단명">
+          <select id="p-kind"><option value="card">카드</option><option value="cash">현금</option><option value="account">계좌</option></select>
+          <input type="color" id="p-color" value="#888888" style="height:42px;padding:4px">
+        </div>
+        <button class="btn btn-gray" onclick="addPaymentMethod()">결제수단 추가</button>
+        <div id="payList" style="margin-top:14px"></div>
       </div>
     </div>
 
@@ -271,363 +254,414 @@
   <script>
     Chart.defaults.font.family = "'Nanum Myeongjo', serif";
 
-    // ── Supabase 설정 ──────────────────────────────────
-    const SUPABASE_URL  = 'https://ryqmmgruyuexusqmsmek.supabase.co';
-    const SUPABASE_KEY  = 'sb_publishable_IvkEDmUQFHP7VSYNJl1v8w_sHDfz947';
+    const SUPABASE_URL = 'https://ryqmmgruyuexusqmsmek.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_IvkEDmUQFHP7VSYNJl1v8w_sHDfz947';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let online = true;  // DB 연결 상태 (false면 localStorage 폴백)
+    let online = true;
 
-    let entries    = [];
-    let filterType = 'all';
-    let filterPay  = 'all';
-    let selectedDay = null;
-    let calYear, calMonth;
-    let chartMonthly = null, chartPay = null, chartType = null;
+    let categories = [], payments = [], txns = [], recurrings = [], budgets = [];
+    let filterType = 'all', filterPay = 'all', selectedDay = null;
+    let chartMonthly = null, chartCat = null, chartPay = null;
 
     const today = new Date();
-    calYear  = today.getFullYear();
-    calMonth = today.getMonth();
+    let calYear = today.getFullYear(), calMonth = today.getMonth();
+    let bgtYear = today.getFullYear(), bgtMonth = today.getMonth();
+    const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const todayStr = today.toISOString().slice(0,10);
+    document.getElementById('t-date').value = todayStr;
 
-    const PAY_LABEL  = { cash:'현금', pcard:'개인카드', ccard:'법인카드' };
-    const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-    const todayStr = today.toISOString().slice(0, 10);
+    // 결제일 select (1~31)
+    (function(){
+      const opts = Array.from({length:31}, (_,i)=>`<option value="${i+1}">매월 ${i+1}일</option>`).join('');
+      document.getElementById('r-day').innerHTML = opts;
+    })();
 
-    document.getElementById('date').value = todayStr;
-
-    // DB row ↔ 화면용 객체 매핑
-    function rowToEntry(r) {
-      return { id: r.id, date: r.entry_date, type: r.type, pay: r.pay, desc: r.description, amount: Number(r.amount) };
-    }
+    const fmt = n => Number(n).toLocaleString('ko-KR') + '원';
+    const fmtShort = n => n >= 100000000 ? (n/100000000).toFixed(1).replace(/\.0$/,'')+'억' : n >= 10000 ? Math.round(n/10000)+'만' : n.toLocaleString('ko-KR');
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const catById = id => categories.find(c => c.id === id);
+    const payById = id => payments.find(p => p.id === id);
 
     function setStatus(text, cls) {
       const el = document.getElementById('dbStatus');
-      if (el) { el.textContent = text; el.className = 'db-status ' + cls; }
+      el.textContent = text; el.className = 'db-status ' + cls;
     }
 
-    // 로컬 백업 (오프라인 폴백용)
-    function saveLocal() { localStorage.setItem('ggb_entries', JSON.stringify(entries)); }
-
-    // ── 데이터 로드 ─────────────────────────────────────
-    async function loadEntries() {
+    // ── 데이터 로드 ────────────────────────────────────────
+    async function loadAll() {
       try {
-        const { data, error } = await sb.from('entries').select('*').order('entry_date', { ascending: false }).order('id', { ascending: false });
-        if (error) throw error;
-        entries = data.map(rowToEntry);
+        const [c, p, t, r, b] = await Promise.all([
+          sb.from('categories').select('*').order('type').order('sort_order'),
+          sb.from('payment_methods').select('*').order('sort_order'),
+          sb.from('transactions').select('*').order('txn_date',{ascending:false}).order('id',{ascending:false}),
+          sb.from('recurring_payments').select('*').order('pay_day'),
+          sb.from('budgets').select('*'),
+        ]);
+        for (const res of [c,p,t,r,b]) if (res.error) throw res.error;
+        categories = c.data; payments = p.data; txns = t.data; recurrings = r.data; budgets = b.data;
         online = true;
-        saveLocal();
         setStatus('● 클라우드 동기화', 'on');
       } catch (e) {
         online = false;
-        entries = JSON.parse(localStorage.getItem('ggb_entries') || '[]');
-        setStatus('● 오프라인 (로컬 저장)', 'off');
-        console.warn('Supabase 연결 실패, 로컬 모드로 전환:', e.message);
+        setStatus('● 오프라인 — 연결 실패', 'off');
+        console.error('Supabase 로드 실패:', e.message);
       }
     }
 
-    function fmt(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
-
-    function fmtShort(n) {
-      if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '억';
-      if (n >= 10000)     return Math.round(n / 10000) + '만';
-      return n.toLocaleString('ko-KR');
+    // ── 드롭다운/필터 채우기 ───────────────────────────────
+    function fillCategoryOptions(selId, typeSelId) {
+      const type = document.getElementById(typeSelId).value;
+      const sel = document.getElementById(selId);
+      const list = categories.filter(c => c.type === type);
+      sel.innerHTML = list.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') || '<option value="">(카테고리 없음)</option>';
+    }
+    function fillPaymentOptions(selId) {
+      document.getElementById(selId).innerHTML = payments.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    }
+    function fillPayFilters() {
+      const html = ['<span>결제</span>',
+        `<button class="chip active" data-f="pay" data-v="all" onclick="setFilter(this)">전체</button>`]
+        .concat(payments.map(p => `<button class="chip" data-f="pay" data-v="${p.id}" onclick="setFilter(this)">${esc(p.name)}</button>`))
+        .join('');
+      document.getElementById('payFilters').innerHTML = html;
+    }
+    function refreshFormOptions() {
+      fillCategoryOptions('t-cat','t-type');
+      fillCategoryOptions('r-cat','r-type');
+      fillPaymentOptions('t-pay');
+      fillPaymentOptions('r-pay');
+      fillPayFilters();
     }
 
-    function escHtml(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // ── 요약 ────────────────────────────────────────────
+    // ── 요약 ───────────────────────────────────────────────
     function renderSummary() {
-      const inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-      const exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
-      document.getElementById('totalIncome').textContent  = fmt(inc);
+      const inc = txns.filter(t => t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+      const exp = txns.filter(t => t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+      document.getElementById('totalIncome').textContent = fmt(inc);
       document.getElementById('totalExpense').textContent = fmt(exp);
-      document.getElementById('balance').textContent      = fmt(inc - exp);
-      ['cash','pcard','ccard'].forEach(p => {
-        const total = entries.filter(e => e.pay === p).reduce((s, e) => s + e.amount, 0);
-        document.getElementById('sum' + p.charAt(0).toUpperCase() + p.slice(1)).textContent = fmt(total);
-      });
+      document.getElementById('balance').textContent = fmt(inc-exp);
     }
 
-    // ── 내역 목록 ────────────────────────────────────────
+    // ── 결제일 알림 ────────────────────────────────────────
+    function renderAlerts() {
+      const box = document.getElementById('alertBox');
+      const todayDay = today.getDate();
+      const lastDay = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+      const soon = recurrings.filter(r => {
+        if (!r.active) return false;
+        const d = Math.min(r.pay_day, lastDay); // 말일 보정
+        return d >= todayDay && d <= todayDay + 3;
+      });
+      if (soon.length === 0) { box.innerHTML = ''; return; }
+      const items = soon.map(r => {
+        const d = Math.min(r.pay_day, lastDay);
+        const dleft = d - todayDay;
+        const when = dleft === 0 ? '<b>오늘</b>' : `${dleft}일 후 (${d}일)`;
+        return `<div class="a-item">• ${esc(r.name)} — ${fmt(r.amount)} · ${when}</div>`;
+      }).join('');
+      box.innerHTML = `<div class="alert-banner">🔔 <b>다가오는 결제일</b>${items}</div>`;
+    }
+
+    // ── 내역 목록 ──────────────────────────────────────────
+    function txItemHtml(t) {
+      const cat = catById(t.category_id), pay = payById(t.payment_method_id);
+      const tags = [
+        cat ? `<span class="tag" style="background:${cat.color}">${esc(cat.name)}</span>` : '',
+        pay ? `<span class="tag" style="background:${pay.color}">${esc(pay.name)}</span>` : '',
+      ].join('');
+      return `<div class="item">
+        <div class="dot" style="background:${t.type==='income'?'#27ae60':'#e74c3c'}"></div>
+        <div class="info">
+          <div class="desc">${esc(t.description) || (cat?esc(cat.name):'(내용 없음)')}</div>
+          <div class="meta"><span class="date">${t.txn_date}</span>${tags}</div>
+        </div>
+        <div class="val ${t.type}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+        <button class="btn-del" onclick="deleteTransaction(${t.id})">✕</button>
+      </div>`;
+    }
     function renderList() {
-      let shown = entries;
-      if (filterType !== 'all') shown = shown.filter(e => e.type === filterType);
-      if (filterPay  !== 'all') shown = shown.filter(e => e.pay  === filterPay);
-
-      const list = document.getElementById('list');
-      if (shown.length === 0) {
-        list.innerHTML = '<div class="empty">내역이 없습니다.</div>';
-        return;
-      }
-      const sorted = [...shown].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
-      list.innerHTML = sorted.map(e => itemHtml(e)).join('');
+      let shown = txns;
+      if (filterType !== 'all') shown = shown.filter(t => t.type === filterType);
+      if (filterPay !== 'all') shown = shown.filter(t => t.payment_method_id === Number(filterPay));
+      const el = document.getElementById('list');
+      el.innerHTML = shown.length ? shown.map(txItemHtml).join('') : '<div class="empty">내역이 없습니다.</div>';
     }
 
-    function itemHtml(e) {
-      return `
-        <div class="item">
-          <div class="dot ${e.type}"></div>
-          <div class="info">
-            <div class="desc">${escHtml(e.desc)}</div>
-            <div class="meta">
-              <span class="date">${e.date}</span>
-              <span class="pay-tag ${e.pay}">${PAY_LABEL[e.pay] || e.pay}</span>
-            </div>
-          </div>
-          <div class="val ${e.type}">${e.type === 'income' ? '+' : '-'}${fmt(e.amount)}</div>
-          <button class="btn-del" onclick="deleteEntry(${e.id})" title="삭제">✕</button>
-        </div>`;
-    }
-
-    // ── 달력 ─────────────────────────────────────────────
+    // ── 달력 ───────────────────────────────────────────────
     function renderCalendar() {
-      const monthStr   = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
-      const firstDow   = new Date(calYear, calMonth, 1).getDay();
-      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-
-      document.getElementById('calTitle').textContent = `${calYear}년 ${MONTH_NAMES[calMonth]}`;
-
-      // 날짜별 합계
+      const monthStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+      const firstDow = new Date(calYear, calMonth, 1).getDay();
+      const days = new Date(calYear, calMonth+1, 0).getDate();
+      document.getElementById('calTitle').textContent = `${calYear}년 ${MONTHS[calMonth]}`;
       const byDay = {};
-      entries.filter(e => e.date.startsWith(monthStr)).forEach(e => {
-        const d = parseInt(e.date.slice(8));
-        if (!byDay[d]) byDay[d] = { income: 0, expense: 0 };
-        byDay[d][e.type] += e.amount;
+      txns.filter(t => t.txn_date.startsWith(monthStr)).forEach(t => {
+        const d = parseInt(t.txn_date.slice(8));
+        (byDay[d] = byDay[d] || {income:0,expense:0})[t.type] += Number(t.amount);
       });
-
-      const DOW_LABEL = ['일','월','화','수','목','금','토'];
-      const DOW_CLASS = ['sun','','','','','','sat'];
-      let html = DOW_LABEL.map((d, i) => `<div class="cal-weekday ${DOW_CLASS[i]}">${d}</div>`).join('');
-
-      for (let i = 0; i < firstDow; i++) html += '<div class="cal-cell empty"></div>';
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const dow     = (firstDow + d - 1) % 7;
-        let cls = 'cal-cell';
-        if (dow === 0)              cls += ' sun';
-        if (dow === 6)              cls += ' sat';
-        if (dateStr === todayStr)   cls += ' today';
-        if (dateStr === selectedDay) cls += ' selected';
-
-        const data = byDay[d];
-        html += `<div class="${cls}" onclick="selectDay('${dateStr}')">
-          <div class="cday">${d}</div>
-          ${data && data.income  ? `<div class="cinc">+${fmtShort(data.income)}</div>`  : ''}
-          ${data && data.expense ? `<div class="cexp">-${fmtShort(data.expense)}</div>` : ''}
-        </div>`;
+      const DOW = ['일','월','화','수','목','금','토'], DC = ['sun','','','','','','sat'];
+      let html = DOW.map((d,i)=>`<div class="cal-weekday ${DC[i]}">${d}</div>`).join('');
+      for (let i=0;i<firstDow;i++) html += '<div class="cal-cell empty"></div>';
+      for (let d=1; d<=days; d++) {
+        const ds = `${monthStr}-${String(d).padStart(2,'0')}`;
+        const dow = (firstDow+d-1)%7;
+        let cls = 'cal-cell' + (dow===0?' sun':dow===6?' sat':'') + (ds===todayStr?' today':'') + (ds===selectedDay?' selected':'');
+        const x = byDay[d];
+        html += `<div class="${cls}" onclick="selectDay('${ds}')"><div class="cday">${d}</div>${x&&x.income?`<div class="cinc">+${fmtShort(x.income)}</div>`:''}${x&&x.expense?`<div class="cexp">-${fmtShort(x.expense)}</div>`:''}</div>`;
       }
-
       document.getElementById('calGrid').innerHTML = html;
       renderCalDetail();
     }
-
     function renderCalDetail() {
       const el = document.getElementById('calDetail');
-      if (!selectedDay) { el.innerHTML = ''; return; }
-
-      const dayEntries = entries.filter(e => e.date === selectedDay)
-                                .sort((a, b) => b.id - a.id);
-      const inner = dayEntries.length === 0
-        ? '<div class="empty" style="padding:16px 0">이 날의 내역이 없습니다.</div>'
-        : dayEntries.map(e => itemHtml(e)).join('');
-
-      el.innerHTML = `<div class="cal-detail"><h4>${selectedDay}</h4>${inner}</div>`;
+      if (!selectedDay) { el.innerHTML=''; return; }
+      const list = txns.filter(t => t.txn_date === selectedDay);
+      el.innerHTML = `<div class="card-box"><h3>${selectedDay}</h3>${list.length?list.map(txItemHtml).join(''):'<div class="empty">내역 없음</div>'}</div>`;
     }
+    function selectDay(ds){ selectedDay = selectedDay===ds?null:ds; renderCalendar(); }
+    function changeMonth(dir){ calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} selectedDay=null; renderCalendar(); }
 
-    function selectDay(dateStr) {
-      selectedDay = selectedDay === dateStr ? null : dateStr;
-      renderCalendar();
-    }
-
-    function changeMonth(dir) {
-      calMonth += dir;
-      if (calMonth > 11) { calMonth = 0; calYear++; }
-      if (calMonth < 0)  { calMonth = 11; calYear--; }
-      selectedDay = null;
-      renderCalendar();
-    }
-
-    // ── 차트 ─────────────────────────────────────────────
+    // ── 차트 ───────────────────────────────────────────────
     function renderCharts() {
-      renderChartMonthly();
-      renderChartPay();
-      renderChartType();
-    }
-
-    function renderChartMonthly() {
-      const labels = [], incData = [], expData = [];
-      for (let i = 5; i >= 0; i--) {
-        const d   = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-        labels.push(`${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2,'0')}`);
-        const m = entries.filter(e => e.date.startsWith(key));
-        incData.push(m.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0));
-        expData.push(m.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0));
+      // 월별
+      const labels=[], inc=[], exp=[];
+      for (let i=5;i>=0;i--){
+        const d = new Date(today.getFullYear(), today.getMonth()-i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        labels.push(`${d.getFullYear().toString().slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}`);
+        const m = txns.filter(t => t.txn_date.startsWith(key));
+        inc.push(m.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0));
+        exp.push(m.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0));
       }
       if (chartMonthly) chartMonthly.destroy();
       chartMonthly = new Chart(document.getElementById('chartMonthly'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: '수입', data: incData, backgroundColor: 'rgba(39,174,96,.75)', borderRadius: 5 },
-            { label: '지출', data: expData, backgroundColor: 'rgba(231,76,60,.75)',  borderRadius: 5 },
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { labels: { padding: 16 } } },
-          scales: {
-            y: { beginAtZero: true, ticks: { callback: v => v >= 10000 ? Math.round(v/10000)+'만' : v.toLocaleString('ko-KR') } },
-            x: { grid: { display: false } }
-          }
-        }
+        type:'bar',
+        data:{labels,datasets:[{label:'수입',data:inc,backgroundColor:'rgba(39,174,96,.75)',borderRadius:5},{label:'지출',data:exp,backgroundColor:'rgba(231,76,60,.75)',borderRadius:5}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{padding:14}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v>=10000?Math.round(v/10000)+'만':v}},x:{grid:{display:false}}}}
       });
-    }
-
-    function renderChartPay() {
-      const expEntries = entries.filter(e => e.type === 'expense');
-      const vals = [
-        expEntries.filter(e => e.pay === 'cash').reduce((s, e) => s + e.amount, 0),
-        expEntries.filter(e => e.pay === 'pcard').reduce((s, e) => s + e.amount, 0),
-        expEntries.filter(e => e.pay === 'ccard').reduce((s, e) => s + e.amount, 0),
-      ];
+      // 카테고리별 지출
+      const expTx = txns.filter(t=>t.type==='expense');
+      const catAgg = categories.filter(c=>c.type==='expense').map(c=>({
+        name:c.name, color:c.color,
+        val: expTx.filter(t=>t.category_id===c.id).reduce((s,t)=>s+Number(t.amount),0)
+      })).filter(x=>x.val>0);
+      const noCat = expTx.filter(t=>!t.category_id).reduce((s,t)=>s+Number(t.amount),0);
+      if (noCat>0) catAgg.push({name:'미분류',color:'#bdc3c7',val:noCat});
+      if (chartCat) chartCat.destroy();
+      chartCat = new Chart(document.getElementById('chartCat'), {
+        type:'doughnut',
+        data:{labels:catAgg.map(x=>x.name),datasets:[{data:catAgg.map(x=>x.val),backgroundColor:catAgg.map(x=>x.color),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11}}},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
+      });
+      // 결제수단별 지출
+      const payAgg = payments.map(p=>({name:p.name,color:p.color,val:expTx.filter(t=>t.payment_method_id===p.id).reduce((s,t)=>s+Number(t.amount),0)})).filter(x=>x.val>0);
       if (chartPay) chartPay.destroy();
       chartPay = new Chart(document.getElementById('chartPay'), {
-        type: 'doughnut',
-        data: {
-          labels: ['현금', '개인카드', '법인카드'],
-          datasets: [{ data: vals, backgroundColor: ['#8e44ad','#2980b9','#e67e22'], borderWidth: 0 }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          cutout: '62%',
-          plugins: {
-            legend: { position: 'bottom', labels: { padding: 12 } },
-            tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw.toLocaleString('ko-KR')}원` } }
-          }
-        }
+        type:'doughnut',
+        data:{labels:payAgg.map(x=>x.name),datasets:[{data:payAgg.map(x=>x.val),backgroundColor:payAgg.map(x=>x.color),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11}}},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
       });
     }
 
-    function renderChartType() {
-      const inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-      const exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
-      if (chartType) chartType.destroy();
-      chartType = new Chart(document.getElementById('chartType'), {
-        type: 'doughnut',
-        data: {
-          labels: ['수입', '지출'],
-          datasets: [{ data: [inc, exp], backgroundColor: ['rgba(39,174,96,.8)','rgba(231,76,60,.8)'], borderWidth: 0 }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          cutout: '62%',
-          plugins: {
-            legend: { position: 'bottom', labels: { padding: 12 } },
-            tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw.toLocaleString('ko-KR')}원` } }
-          }
-        }
-      });
+    // ── 정기결제 ───────────────────────────────────────────
+    function renderRecurring() {
+      const el = document.getElementById('recurringList');
+      if (!recurrings.length) { el.innerHTML = '<div class="empty">등록된 정기결제가 없습니다.</div>'; return; }
+      el.innerHTML = recurrings.map(r => {
+        const cat = catById(r.category_id), pay = payById(r.payment_method_id);
+        const tags = [cat?`<span class="tag" style="background:${cat.color}">${esc(cat.name)}</span>`:'', pay?`<span class="tag" style="background:${pay.color}">${esc(pay.name)}</span>`:''].join('');
+        return `<div class="item">
+          <div class="dot" style="background:${r.active?'#3498db':'#ccc'}"></div>
+          <div class="info"><div class="desc">${esc(r.name)}</div>
+          <div class="meta"><span class="date">매월 ${r.pay_day}일</span>${tags}</div></div>
+          <div class="val ${r.type}">${r.type==='income'?'+':'-'}${fmt(r.amount)}</div>
+          <button class="btn-del" onclick="deleteRecurring(${r.id})">✕</button>
+        </div>`;
+      }).join('');
     }
 
-    // ── 화면 새로고침 (활성 탭 기준) ──────────────────────
-    function refreshActive() {
-      renderSummary();
-      const activeTab = document.querySelector('.tab-content.active').id;
-      if (activeTab === 'tab-list')     renderList();
-      if (activeTab === 'tab-calendar') renderCalendar();
-      if (activeTab === 'tab-chart')    renderCharts();
+    // ── 예산 ───────────────────────────────────────────────
+    function changeBudgetMonth(dir){ bgtMonth+=dir; if(bgtMonth>11){bgtMonth=0;bgtYear++;} if(bgtMonth<0){bgtMonth=11;bgtYear--;} renderBudget(); }
+    function renderBudget() {
+      const ym = `${bgtYear}-${String(bgtMonth+1).padStart(2,'0')}`;
+      document.getElementById('bgtTitle').textContent = `${bgtYear}년 ${MONTHS[bgtMonth]} 예산`;
+      const expCats = categories.filter(c => c.type==='expense');
+      const monthTx = txns.filter(t => t.type==='expense' && t.txn_date.startsWith(ym));
+      const el = document.getElementById('budgetList');
+      if (!expCats.length) { el.innerHTML = '<div class="empty">지출 카테고리를 먼저 만들어주세요.</div>'; return; }
+      el.innerHTML = expCats.map(c => {
+        const b = budgets.find(x => x.year_month===ym && x.category_id===c.id);
+        const limit = b ? Number(b.amount) : 0;
+        const spent = monthTx.filter(t => t.category_id===c.id).reduce((s,t)=>s+Number(t.amount),0);
+        const pct = limit>0 ? Math.min(100, Math.round(spent/limit*100)) : 0;
+        const over = limit>0 && spent>limit;
+        const barColor = over ? '#e74c3c' : pct>=80 ? '#e67e22' : c.color;
+        return `<div class="bgt">
+          <div class="bgt-top"><span class="bgt-name" style="color:${c.color}">${esc(c.name)}</span>
+            <span class="bgt-num">${fmt(spent)} ${limit>0?`/ ${fmt(limit)} (${pct}%)`:''}</span></div>
+          ${limit>0?`<div class="bgt-bar"><div class="bgt-fill" style="width:${pct}%;background:${barColor}"></div></div>`:''}
+          <div class="bgt-input" style="margin-top:8px">
+            <input type="number" id="bgt-${c.id}" placeholder="예산 입력" value="${limit||''}" min="0">
+            <button class="btn btn-sm" onclick="saveBudget(${c.id},'${ym}')">저장</button>
+          </div>
+        </div>`;
+      }).join('');
     }
 
-    // ── 조작 ─────────────────────────────────────────────
-    async function addEntry() {
-      const date   = document.getElementById('date').value;
-      const type   = document.getElementById('type').value;
-      const pay    = document.getElementById('pay').value;
-      const desc   = document.getElementById('desc').value.trim();
-      const amount = parseFloat(document.getElementById('amount').value);
+    // ── 설정: 카테고리/결제수단 목록 ───────────────────────
+    function renderSettings() {
+      document.getElementById('catList').innerHTML = categories.map(c =>
+        `<div class="item"><div class="dot" style="background:${c.color}"></div>
+         <div class="info"><div class="desc">${esc(c.name)}</div><div class="meta"><span class="date">${c.type==='income'?'수입':'지출'}</span></div></div>
+         <button class="btn-del" onclick="deleteCategory(${c.id})">✕</button></div>`).join('') || '<div class="empty">없음</div>';
+      document.getElementById('payList').innerHTML = payments.map(p =>
+        `<div class="item"><div class="dot" style="background:${p.color}"></div>
+         <div class="info"><div class="desc">${esc(p.name)}</div><div class="meta"><span class="date">${({cash:'현금',card:'카드',account:'계좌'})[p.kind]}</span></div></div>
+         <button class="btn-del" onclick="deletePaymentMethod(${p.id})">✕</button></div>`).join('') || '<div class="empty">없음</div>';
+    }
 
-      if (!date)               { alert('날짜를 선택해주세요.');  return; }
-      if (!desc)               { alert('항목을 입력해주세요.');  return; }
-      if (!amount || amount <= 0) { alert('금액을 입력해주세요.'); return; }
+    // ── 전체 새로고침 ──────────────────────────────────────
+    function renderActive() {
+      renderSummary(); renderAlerts();
+      const tab = document.querySelector('.tab-content.active').id;
+      if (tab==='tab-list') renderList();
+      else if (tab==='tab-calendar') renderCalendar();
+      else if (tab==='tab-chart') renderCharts();
+      else if (tab==='tab-recurring') renderRecurring();
+      else if (tab==='tab-budget') renderBudget();
+      else if (tab==='tab-settings') renderSettings();
+    }
 
-      const btn = document.querySelector('.btn-add');
-      btn.disabled = true;
-
-      if (online) {
-        try {
-          const { data, error } = await sb.from('entries')
-            .insert({ entry_date: date, type, pay, description: desc, amount })
-            .select().single();
-          if (error) throw error;
-          entries.unshift(rowToEntry(data));
-          saveLocal();
-        } catch (e) {
-          alert('저장 중 오류가 발생했습니다: ' + e.message);
-          btn.disabled = false;
-          return;
-        }
-      } else {
-        entries.unshift({ id: Date.now(), date, type, pay, desc, amount });
-        saveLocal();
-      }
-
+    // ── CRUD: 거래 ─────────────────────────────────────────
+    async function addTransaction() {
+      const date = document.getElementById('t-date').value;
+      const type = document.getElementById('t-type').value;
+      const pay = document.getElementById('t-pay').value || null;
+      const cat = document.getElementById('t-cat').value || null;
+      const desc = document.getElementById('t-desc').value.trim();
+      const amount = parseFloat(document.getElementById('t-amount').value);
+      if (!date) return alert('날짜를 선택해주세요.');
+      if (!amount || amount<=0) return alert('금액을 입력해주세요.');
+      const btn = document.getElementById('t-add'); btn.disabled = true;
+      const { data, error } = await sb.from('transactions').insert({
+        txn_date:date, type, amount, description:desc,
+        category_id: cat?Number(cat):null, payment_method_id: pay?Number(pay):null
+      }).select().single();
       btn.disabled = false;
-      refreshActive();
-      document.getElementById('desc').value   = '';
-      document.getElementById('amount').value = '';
+      if (error) return alert('저장 오류: '+error.message);
+      txns.unshift(data);
+      document.getElementById('t-desc').value=''; document.getElementById('t-amount').value='';
+      renderActive();
     }
-
-    async function deleteEntry(id) {
+    async function deleteTransaction(id) {
       if (!confirm('삭제할까요?')) return;
-
-      if (online) {
-        try {
-          const { error } = await sb.from('entries').delete().eq('id', id);
-          if (error) throw error;
-        } catch (e) {
-          alert('삭제 중 오류가 발생했습니다: ' + e.message);
-          return;
-        }
-      }
-      entries = entries.filter(e => e.id !== id);
-      saveLocal();
-      refreshActive();
+      const { error } = await sb.from('transactions').delete().eq('id',id);
+      if (error) return alert('삭제 오류: '+error.message);
+      txns = txns.filter(t=>t.id!==id); renderActive();
     }
 
-    function setFilter(kind, val, btn) {
-      if (kind === 'type') {
-        filterType = val;
-        document.querySelectorAll('.filter-btns.ftype button').forEach(b => b.classList.remove('active'));
-      } else {
-        filterPay = val;
-        document.querySelectorAll('.filter-btns.fpay button').forEach(b => b.classList.remove('active'));
-      }
+    // ── CRUD: 정기결제 ─────────────────────────────────────
+    async function addRecurring() {
+      const name = document.getElementById('r-name').value.trim();
+      const amount = parseFloat(document.getElementById('r-amount').value);
+      const pay_day = parseInt(document.getElementById('r-day').value);
+      const type = document.getElementById('r-type').value;
+      const pay = document.getElementById('r-pay').value || null;
+      const cat = document.getElementById('r-cat').value || null;
+      if (!name) return alert('이름을 입력해주세요.');
+      if (!amount || amount<=0) return alert('금액을 입력해주세요.');
+      const btn = document.getElementById('r-add'); btn.disabled = true;
+      const { data, error } = await sb.from('recurring_payments').insert({
+        name, amount, pay_day, type, category_id: cat?Number(cat):null, payment_method_id: pay?Number(pay):null
+      }).select().single();
+      btn.disabled = false;
+      if (error) return alert('저장 오류: '+error.message);
+      recurrings.push(data); recurrings.sort((a,b)=>a.pay_day-b.pay_day);
+      document.getElementById('r-name').value=''; document.getElementById('r-amount').value='';
+      renderActive();
+    }
+    async function deleteRecurring(id) {
+      if (!confirm('삭제할까요?')) return;
+      const { error } = await sb.from('recurring_payments').delete().eq('id',id);
+      if (error) return alert('삭제 오류: '+error.message);
+      recurrings = recurrings.filter(r=>r.id!==id); renderActive();
+    }
+
+    // ── CRUD: 예산 ─────────────────────────────────────────
+    async function saveBudget(catId, ym) {
+      const v = parseFloat(document.getElementById('bgt-'+catId).value);
+      if (isNaN(v) || v<0) return alert('예산 금액을 입력해주세요.');
+      const { data, error } = await sb.from('budgets')
+        .upsert({ year_month:ym, category_id:catId, amount:v }, { onConflict:'year_month,category_id' })
+        .select().single();
+      if (error) return alert('저장 오류: '+error.message);
+      const i = budgets.findIndex(b=>b.year_month===ym && b.category_id===catId);
+      if (i>=0) budgets[i]=data; else budgets.push(data);
+      renderBudget();
+    }
+
+    // ── CRUD: 카테고리 ─────────────────────────────────────
+    async function addCategory() {
+      const name = document.getElementById('c-name').value.trim();
+      const type = document.getElementById('c-type').value;
+      const color = document.getElementById('c-color').value;
+      if (!name) return alert('카테고리명을 입력해주세요.');
+      const { data, error } = await sb.from('categories').insert({ name, type, color, sort_order:99 }).select().single();
+      if (error) return alert('저장 오류: '+error.message);
+      categories.push(data); document.getElementById('c-name').value='';
+      refreshFormOptions(); renderSettings();
+    }
+    async function deleteCategory(id) {
+      if (!confirm('삭제할까요? 이 카테고리의 거래는 미분류로 바뀝니다.')) return;
+      const { error } = await sb.from('categories').delete().eq('id',id);
+      if (error) return alert('삭제 오류: '+error.message);
+      categories = categories.filter(c=>c.id!==id);
+      txns.forEach(t=>{ if(t.category_id===id) t.category_id=null; });
+      refreshFormOptions(); renderSettings();
+    }
+
+    // ── CRUD: 결제수단 ─────────────────────────────────────
+    async function addPaymentMethod() {
+      const name = document.getElementById('p-name').value.trim();
+      const kind = document.getElementById('p-kind').value;
+      const color = document.getElementById('p-color').value;
+      if (!name) return alert('결제수단명을 입력해주세요.');
+      const { data, error } = await sb.from('payment_methods').insert({ name, kind, color, sort_order:99 }).select().single();
+      if (error) return alert('저장 오류: '+error.message);
+      payments.push(data); document.getElementById('p-name').value='';
+      refreshFormOptions(); renderSettings();
+    }
+    async function deletePaymentMethod(id) {
+      if (!confirm('삭제할까요? 이 결제수단의 거래는 미지정으로 바뀝니다.')) return;
+      const { error } = await sb.from('payment_methods').delete().eq('id',id);
+      if (error) return alert('삭제 오류: '+error.message);
+      payments = payments.filter(p=>p.id!==id);
+      txns.forEach(t=>{ if(t.payment_method_id===id) t.payment_method_id=null; });
+      refreshFormOptions(); renderSettings();
+    }
+
+    // ── 필터 / 탭 ──────────────────────────────────────────
+    function setFilter(btn) {
+      const f = btn.dataset.f, v = btn.dataset.v;
+      if (f==='type') filterType = v; else filterPay = v;
+      btn.parentElement.querySelectorAll(`.chip[data-f="${f}"]`).forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       renderList();
     }
-
     function showTab(tab, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+      document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+      document.getElementById('tab-'+tab).classList.add('active');
       btn.classList.add('active');
-      if (tab === 'calendar') renderCalendar();
-      if (tab === 'chart')    renderCharts();
+      renderActive();
     }
 
-    ['desc', 'amount'].forEach(id => {
-      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
-    });
+    ['t-desc','t-amount'].forEach(id => document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') addTransaction(); }));
 
-    // ── 초기화: DB 로드 후 렌더 ──────────────────────────
+    // ── 초기화 ─────────────────────────────────────────────
     (async () => {
-      await loadEntries();
-      renderSummary();
-      renderList();
+      await loadAll();
+      refreshFormOptions();
+      renderSummary(); renderAlerts(); renderList();
     })();
   </script>
 </body>
