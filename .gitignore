@@ -1,3 +1,7 @@
 .claude/
 
 .vercel
+.agents/
+skills-lock.json
+gh_auth_pid.txt
+vercel_pid.txt
