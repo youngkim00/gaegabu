@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Nanum Myeongjo', serif; background: #f0f2f5; color: #333; }
@@ -14,6 +15,10 @@
     h1 { text-align: center; padding: 24px 0 14px; font-size: 1.7rem; font-weight: 800; color: #2c3e50; letter-spacing: -.5px; }
 
     .container { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
+
+    .db-status { text-align: center; font-size: .72rem; margin-bottom: 14px; color: #aaa; }
+    .db-status.on  { color: #27ae60; }
+    .db-status.off { color: #e67e22; }
 
     /* ── 요약 카드 ── */
     .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
@@ -158,6 +163,7 @@
 <body>
   <h1>가계부</h1>
   <div class="container">
+    <div class="db-status" id="dbStatus">● 연결 중…</div>
 
     <!-- 요약 (항상 표시) -->
     <div class="summary">
@@ -265,7 +271,13 @@
   <script>
     Chart.defaults.font.family = "'Nanum Myeongjo', serif";
 
-    let entries    = JSON.parse(localStorage.getItem('ggb_entries') || '[]');
+    // ── Supabase 설정 ──────────────────────────────────
+    const SUPABASE_URL  = 'https://ryqmmgruyuexusqmsmek.supabase.co';
+    const SUPABASE_KEY  = 'sb_publishable_IvkEDmUQFHP7VSYNJl1v8w_sHDfz947';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let online = true;  // DB 연결 상태 (false면 localStorage 폴백)
+
+    let entries    = [];
     let filterType = 'all';
     let filterPay  = 'all';
     let selectedDay = null;
@@ -282,7 +294,35 @@
 
     document.getElementById('date').value = todayStr;
 
-    function save() { localStorage.setItem('ggb_entries', JSON.stringify(entries)); }
+    // DB row ↔ 화면용 객체 매핑
+    function rowToEntry(r) {
+      return { id: r.id, date: r.entry_date, type: r.type, pay: r.pay, desc: r.description, amount: Number(r.amount) };
+    }
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('dbStatus');
+      if (el) { el.textContent = text; el.className = 'db-status ' + cls; }
+    }
+
+    // 로컬 백업 (오프라인 폴백용)
+    function saveLocal() { localStorage.setItem('ggb_entries', JSON.stringify(entries)); }
+
+    // ── 데이터 로드 ─────────────────────────────────────
+    async function loadEntries() {
+      try {
+        const { data, error } = await sb.from('entries').select('*').order('entry_date', { ascending: false }).order('id', { ascending: false });
+        if (error) throw error;
+        entries = data.map(rowToEntry);
+        online = true;
+        saveLocal();
+        setStatus('● 클라우드 동기화', 'on');
+      } catch (e) {
+        online = false;
+        entries = JSON.parse(localStorage.getItem('ggb_entries') || '[]');
+        setStatus('● 오프라인 (로컬 저장)', 'off');
+        console.warn('Supabase 연결 실패, 로컬 모드로 전환:', e.message);
+      }
+    }
 
     function fmt(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
 
@@ -493,8 +533,17 @@
       });
     }
 
+    // ── 화면 새로고침 (활성 탭 기준) ──────────────────────
+    function refreshActive() {
+      renderSummary();
+      const activeTab = document.querySelector('.tab-content.active').id;
+      if (activeTab === 'tab-list')     renderList();
+      if (activeTab === 'tab-calendar') renderCalendar();
+      if (activeTab === 'tab-chart')    renderCharts();
+    }
+
     // ── 조작 ─────────────────────────────────────────────
-    function addEntry() {
+    async function addEntry() {
       const date   = document.getElementById('date').value;
       const type   = document.getElementById('type').value;
       const pay    = document.getElementById('pay').value;
@@ -505,23 +554,48 @@
       if (!desc)               { alert('항목을 입력해주세요.');  return; }
       if (!amount || amount <= 0) { alert('금액을 입력해주세요.'); return; }
 
-      entries.push({ id: Date.now(), date, type, pay, desc, amount });
-      save();
-      renderSummary();
-      renderList();
+      const btn = document.querySelector('.btn-add');
+      btn.disabled = true;
+
+      if (online) {
+        try {
+          const { data, error } = await sb.from('entries')
+            .insert({ entry_date: date, type, pay, description: desc, amount })
+            .select().single();
+          if (error) throw error;
+          entries.unshift(rowToEntry(data));
+          saveLocal();
+        } catch (e) {
+          alert('저장 중 오류가 발생했습니다: ' + e.message);
+          btn.disabled = false;
+          return;
+        }
+      } else {
+        entries.unshift({ id: Date.now(), date, type, pay, desc, amount });
+        saveLocal();
+      }
+
+      btn.disabled = false;
+      refreshActive();
       document.getElementById('desc').value   = '';
       document.getElementById('amount').value = '';
     }
 
-    function deleteEntry(id) {
+    async function deleteEntry(id) {
       if (!confirm('삭제할까요?')) return;
+
+      if (online) {
+        try {
+          const { error } = await sb.from('entries').delete().eq('id', id);
+          if (error) throw error;
+        } catch (e) {
+          alert('삭제 중 오류가 발생했습니다: ' + e.message);
+          return;
+        }
+      }
       entries = entries.filter(e => e.id !== id);
-      save();
-      renderSummary();
-      const activeTab = document.querySelector('.tab-content.active').id;
-      if (activeTab === 'tab-list')     renderList();
-      if (activeTab === 'tab-calendar') renderCalendar();
-      if (activeTab === 'tab-chart')    renderCharts();
+      saveLocal();
+      refreshActive();
     }
 
     function setFilter(kind, val, btn) {
@@ -549,8 +623,12 @@
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
     });
 
-    renderSummary();
-    renderList();
+    // ── 초기화: DB 로드 후 렌더 ──────────────────────────
+    (async () => {
+      await loadEntries();
+      renderSummary();
+      renderList();
+    })();
   </script>
 </body>
 </html>
